@@ -12,7 +12,15 @@ serve(async (req) => {
   }
 
   try {
-    const { name, email } = await req.json()
+    const body = await req.json()
+    console.log("Received payload:", JSON.stringify(body))
+    
+    // Support both direct client calls and Supabase Webhooks
+    const record = body.record || body
+    const name = record.name
+    const email = record.email
+
+    console.log(`Parsed recipient - Name: ${name}, Email: ${email}`)
     
     // Get Resend API key from Supabase Environment Variables
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
