@@ -1,3 +1,6 @@
+import demoVideo from './assets/demo-video.mp4';
+import heroVideo from './assets/hero-video.mp4';
+
 // ======== SUPABASE CONFIGURATION ========
 // Replace 'YOUR_SUPABASE_URL' and 'YOUR_SUPABASE_ANON_KEY' with your actual Supabase credentials.
 const SUPABASE_URL = 'https://ntvjfremtoqcuyecdrxq.supabase.co';
@@ -13,10 +16,21 @@ if (typeof supabase !== 'undefined' && SUPABASE_URL !== 'YOUR_SUPABASE_URL' && S
   const vc = document.getElementById('video-container');
   const bgImage = document.getElementById('heroBgImage');
 
+  // Handle smooth background image display when fully loaded
+  if (bgImage) {
+    if (bgImage.complete) {
+      bgImage.classList.add('loaded');
+    } else {
+      bgImage.addEventListener('load', () => {
+        bgImage.classList.add('loaded');
+      });
+    }
+  }
+
   if (vc) {
     const isMobile = window.innerWidth <= 767;
     const v = document.createElement('video');
-    v.src = isMobile ? 'assets/demo-video.mp4' : 'assets/hero-video.mp4';
+    v.src = isMobile ? demoVideo : heroVideo;
     v.autoplay = true;
     v.muted = true;
     v.loop = true;

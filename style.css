@@ -94,7 +94,7 @@ body {
   padding: 26px 20px 0px;
 }
 
-/* Background image — shows immediately */
+/* Background image — starts blank, fades in when fully loaded */
 .hero-bg-image {
   position: absolute;
   top: 0;
@@ -103,8 +103,12 @@ body {
   height: 100%;
   object-fit: cover;
   z-index: 0;
-  opacity: 1;
+  opacity: 0;
   transition: opacity 0.8s ease;
+}
+
+.hero-bg-image.loaded {
+  opacity: 1;
 }
 
 .hero-bg-image.hidden {
