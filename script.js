@@ -3,8 +3,8 @@ import heroVideo from './assets/hero-video.mp4';
 
 // ======== SUPABASE CONFIGURATION ========
 // Replace 'YOUR_SUPABASE_URL' and 'YOUR_SUPABASE_ANON_KEY' with your actual Supabase credentials.
-const SUPABASE_URL = 'https://ntvjfremtoqcuyecdrxq.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_lNReTjzZYKrpA7_MPBJxHA_Kk8oCbOw';
+const SUPABASE_URL = 'https://qydgtuvytjouwuuobsoe.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Xl7HSZOq1Dkk3X1xlhLrrQ_mL6xxEF3';
 
 let supabaseClient = null;
 if (typeof supabase !== 'undefined' && SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
@@ -131,7 +131,19 @@ faqItems.forEach(item => {
 // It is recommended to move this to a backend or serverless function (like Supabase Edge Functions) in production.
 async function sendConfirmationEmail(name, email, country, referral) {
   try {
-    // Call our simple local Node.js backend
+    if (supabaseClient) {
+      const { data, error } = await supabaseClient.functions.invoke('send-email', {
+        body: { name, email, country, referral }
+      });
+      if (error) {
+        console.error('Supabase Edge Function returned an error:', error);
+        return;
+      }
+      console.log('Confirmation email triggered successfully via Supabase Edge Function.');
+      return;
+    }
+
+    // Fallback: Call our simple local Node.js backend
     const response = await fetch('http://localhost:3000/send-email', {
       method: 'POST',
       headers: {
@@ -144,10 +156,10 @@ async function sendConfirmationEmail(name, email, country, referral) {
       console.error('Backend returned an error:', await response.text());
       return;
     }
-    
+
     console.log('Confirmation email triggered successfully via simple backend.');
   } catch (err) {
-    console.error('Error connecting to backend:', err);
+    console.error('Error triggering confirmation email:', err);
   }
 }
 
@@ -260,7 +272,7 @@ form.addEventListener('submit', async (e) => {
     // Hide form wrapper and show success wrapper
     const formWrapper = document.getElementById('formContentWrapper');
     const successWrapper = document.getElementById('successContentWrapper');
-    
+
     if (formWrapper && successWrapper) {
       formWrapper.style.display = 'none';
       successWrapper.style.display = 'block';
@@ -269,21 +281,6 @@ form.addEventListener('submit', async (e) => {
     }
   };
 
-  // Copy button logic
-  const copyBtn = document.getElementById('copyBtn');
-  if (copyBtn) {
-    copyBtn.addEventListener('click', () => {
-      const copyText = document.getElementById('copyTextContent').innerText;
-      navigator.clipboard.writeText(copyText).then(() => {
-        const btnText = document.getElementById('copyBtnText');
-        const originalBtnText = btnText.innerText;
-        btnText.innerText = 'Copied!';
-        setTimeout(() => {
-          btnText.innerText = originalBtnText;
-        }, 2000);
-      });
-    });
-  }
 
   if (supabaseClient) {
     try {
@@ -342,5 +339,21 @@ document.addEventListener('DOMContentLoaded', () => {
       formWrapper.style.display = 'none';
       successWrapper.style.display = 'block';
     }
+  }
+
+  // Copy button logic
+  const copyBtn = document.getElementById('copyBtn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const copyText = document.getElementById('copyTextContent').innerText;
+      navigator.clipboard.writeText(copyText).then(() => {
+        const btnText = document.getElementById('copyBtnText');
+        const originalBtnText = btnText.innerText;
+        btnText.innerText = 'Copied!';
+        setTimeout(() => {
+          btnText.innerText = originalBtnText;
+        }, 2000);
+      });
+    });
   }
 });

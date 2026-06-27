@@ -1,34 +1,45 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const body = await req.json()
-    console.log("Received payload:", JSON.stringify(body))
-    
-    // Support both direct client calls and Supabase Webhooks
-    const record = body.record || body
-    const name = record.name
-    const email = record.email
-
-    console.log(`Parsed recipient - Name: ${name}, Email: ${email}`)
-    
-    // Get Resend API key from Supabase Environment Variables
+    // 1. Get Resend API key from Supabase Secrets
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-
     if (!RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY is not set in Environment Variables')
+      console.error('Error: RESEND_API_KEY is not set in Supabase environment secrets.')
+      return new Response(
+        JSON.stringify({ error: 'RESEND_API_KEY is missing from Supabase Secrets' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
+    // 2. Parse payload from webhook trigger
+    const body = await req.json()
+    console.log("Received Webhook Payload:", JSON.stringify(body, null, 2))
+
+    // Support database webhook event structure (body.record) or direct invocation
+    const record = body.record || body
+    const name = record.name || 'Subscriber'
+    const email = record.email
+
+    if (!email) {
+      console.error('Error: Email address is missing from the record.')
+      return new Response(
+        JSON.stringify({ error: 'No email found in payload record' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`Sending welcome email to: ${email} (${name})`)
+
+    // 3. Email layout (HTML content)
     const htmlContent = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #eaebed; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
         
@@ -96,6 +107,7 @@ serve(async (req) => {
       </div>
     `
 
+    // 4. Send request to Resend API
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -110,23 +122,24 @@ serve(async (req) => {
       }),
     })
 
-    const data = await res.json()
+    const resBody = await res.json()
+    console.log('Resend Response Code:', res.status)
+    console.log('Resend Response Body:', JSON.stringify(resBody))
 
-    if (res.ok) {
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
-    } else {
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      })
+    if (!res.ok) {
+      throw new Error(`Resend API Error: ${resBody.message || JSON.stringify(resBody)}`)
     }
+
+    return new Response(
+      JSON.stringify({ success: true, message: 'Email sent successfully', data: resBody }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+    console.error('Edge Function Error:', error.message)
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   }
 })

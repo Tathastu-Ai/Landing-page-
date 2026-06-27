@@ -5,8 +5,8 @@
   --bg-primary: #000000;
   --bg-secondary: #0a0a0a;
   --bg-card: #111111;
-  --gold: #c9a84c;
-  --gold-light: #faeba5;
+  --gold: #E4B463;
+  --gold-light: #E4B463;
   --text-primary: #ffffff;
   --text-secondary: #b0b0b0;
   --text-muted: #666666;
@@ -21,6 +21,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -61,11 +62,14 @@ body {
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   text-decoration: none;
+  padding-right: 15px;
+
 }
 
 .navbar-logo {
+
   height: 48px;
   width: auto;
   transition: all 0.3s ease;
@@ -105,6 +109,8 @@ body {
   z-index: 0;
   opacity: 0;
   transition: opacity 0.8s ease;
+  filter: brightness(1.25);
+  transform: scale(1.2);
 }
 
 .hero-bg-image.loaded {
@@ -126,6 +132,7 @@ body {
   z-index: 0;
   opacity: 0;
   transition: opacity 1s ease;
+  overflow: hidden;
 }
 
 #video-container.visible {
@@ -136,6 +143,8 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  filter: brightness(1.25);
+  transform: scale(1.2);
 }
 
 .hero-overlay {
@@ -145,11 +154,11 @@ body {
   width: 100%;
   height: 100%;
   background: linear-gradient(180deg,
-      rgba(0, 0, 0, 0.2) 0%,
-      rgba(0, 0, 0, 0.1) 30%,
-      rgba(0, 0, 0, 0.3) 60%,
-      rgba(0, 0, 0, 0.8) 85%,
-      rgba(0, 0, 0, 1) 100%);
+      rgba(0, 0, 0, 0.05) 0%,
+      rgba(0, 0, 0, 0.0) 30%,
+      rgba(0, 0, 0, 0.1) 60%,
+      rgba(0, 0, 0, 0.7) 85%,
+      rgba(0, 0, 0, 0.95) 100%);
   z-index: 1;
 }
 
@@ -179,15 +188,17 @@ body {
   opacity: 0;
   transform: translateY(30px);
   animation: fadeInUp 1s ease 0.3s forwards;
+  margin-left: 10px;
 }
 
 .hero-subtitle {
   font-size: 1.2rem;
-  color: #faeba5;
+  color: var(--gold-light);
   font-weight: 400;
   opacity: 0;
   transform: translateY(30px);
   animation: fadeInUp 1s ease 0.6s forwards;
+  margin-left: 10px;
 }
 
 .highlight-text {
@@ -216,6 +227,7 @@ body {
   opacity: 0;
   transform: translateY(30px);
   animation: fadeInUp 1s ease 0.9s forwards;
+  margin-left: 10px;
 }
 
 .cta-button:hover {
@@ -231,6 +243,7 @@ body {
   margin-top: 0;
   opacity: 0;
   animation: fadeInUp 1s ease 1.2s forwards;
+  margin-left: 8px;
 }
 
 /* ======== SECTION STYLES ======== */
@@ -259,7 +272,7 @@ body {
 .intro-title {
   font-family: 'Inter', sans-serif;
   font-size: clamp(1.6rem, 3vw, 2.2rem);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   margin-bottom: 40px;
   line-height: 1.2;
@@ -333,8 +346,9 @@ body {
 .how-title {
   font-family: 'Inter', sans-serif;
   font-size: clamp(1.4rem, 3vw, 1.8rem);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
+  margin-left: 12px;
 }
 
 .steps-list {
@@ -413,19 +427,21 @@ body {
 }
 
 .tathastu-hindi-img {
-  max-width: 260px;
+  max-width: 150px;
   width: 100%;
   height: auto;
   display: block;
   margin: 0 auto -55px;
+
 }
 
 .tathastu-english {
   font-family: 'Inter', sans-serif;
   font-size: clamp(1.8rem, 4vw, 2.5rem);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   margin-bottom: 8px;
+  margin-top: 5px;
 }
 
 .tathastu-subtitle {
@@ -523,7 +539,7 @@ body {
 .form-group input:focus,
 .form-group select:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 20px rgba(201, 168, 76, 0.15);
+  box-shadow: 0 0 20px rgba(228, 180, 99, 0.15);
 }
 
 .form-group select {
@@ -594,22 +610,22 @@ body {
 .form-submit-btn {
   margin-top: 12px;
   padding: 16px;
-  background: linear-gradient(135deg, #c9a84c, #d4b65a, #e8c84a);
+  background: var(--gold);
   color: #000;
   font-weight: 700;
   font-size: 0.9rem;
   letter-spacing: 2px;
   text-transform: uppercase;
   border: none;
-  border-radius: 12px;
+  border-radius: 45px;
   cursor: pointer;
   transition: all 0.4s ease;
-  box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+  box-shadow: 0 0 20px rgba(228, 180, 99, 0.2);
 }
 
 .form-submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 0 40px rgba(201, 168, 76, 0.4);
+  box-shadow: 0 0 40px rgba(228, 180, 99, 0.4);
 }
 
 .form-submit-btn:disabled {
@@ -652,10 +668,11 @@ body {
   text-align: center;
   font-family: 'Inter', sans-serif;
   font-size: clamp(1.8rem, 4vw, 2.5rem);
-  font-weight: 800;
+  font-weight: 400;
   letter-spacing: -0.02em;
   margin-bottom: 50px;
   color: var(--gold);
+  margin-left: 10px;
 }
 
 .faq-item {
@@ -772,7 +789,8 @@ body {
 .footer {
   padding: 60px 0 20px;
   text-align: center;
-  border-top: 1px solid var(--border-color);
+
+  margin-left: 10px;
 }
 
 .footer-inner {
@@ -785,12 +803,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 6px;
+  margin-bottom: 5px;
 }
 
 .footer-logo {
-  height: 42px;
+  height: 60px;
+  gap: 6px;
+
 }
 
 .footer-socials {
@@ -917,10 +937,24 @@ body {
 @media (max-width: 768px) {
   .navbar {
     padding: 6px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+  }
+
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    gap: 3px;
+
   }
 
   .navbar-logo {
     height: 38px;
+    margin-right: 3px;
   }
 
   .hero {
@@ -942,6 +976,7 @@ body {
 
   .hero-subtitle {
     font-size: 1rem;
+    margin-right: 10px;
   }
 }
 
@@ -949,16 +984,18 @@ body {
   .cta-button {
     padding: 10px 28px;
     font-size: 0.9rem;
+    margin-right: 5px;
   }
 }
 
 .footer-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
   color: #E4B463;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 500;
   letter-spacing: -0.015em;
   transition: opacity 0.3s ease;
+  margin-right: 15px;
 }
 
 /* ======== SUCCESS MESSAGE ======== */
@@ -969,9 +1006,9 @@ body {
 }
 
 .success-title {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: clamp(1.8rem, 4vw, 2.2rem);
-  font-weight: 700;
+  font-weight: 350;
   margin-bottom: 8px;
   color: #ffffff;
 }
@@ -1025,6 +1062,13 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
