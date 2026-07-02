@@ -126,21 +126,16 @@ faqItems.forEach(item => {
   });
 });
 
-// ======== RESEND EMAIL ========
-// Note: Calling Resend directly from the frontend might fail due to CORS and exposes your API key.
-// It is recommended to move this to a backend or serverless function (like Supabase Edge Functions) in production.
-async function sendConfirmationEmail(name, email, country, referral) {
+async function submitToEdgeFunction(name, email, country, referral, turnstileToken) {
   try {
     if (supabaseClient) {
       const { data, error } = await supabaseClient.functions.invoke('hyper-task', {
-        body: { name, email, country, referral }
+        body: { name, email, country, referral, turnstileToken }
       });
       if (error) {
-        console.error('Supabase Edge Function returned an error:', error);
-        return;
+        throw error;
       }
-      console.log('Confirmation email triggered successfully via Supabase Edge Function.');
-      return;
+      return data;
     }
 
     // Fallback: Call our simple local Node.js backend
@@ -149,17 +144,18 @@ async function sendConfirmationEmail(name, email, country, referral) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, email, country, referral })
+      body: JSON.stringify({ name, email, country, referral, turnstileToken })
     });
 
     if (!response.ok) {
-      console.error('Backend returned an error:', await response.text());
-      return;
+      const errText = await response.text();
+      throw new Error(errText);
     }
-
-    console.log('Confirmation email triggered successfully via simple backend.');
+    
+    return await response.json();
   } catch (err) {
-    console.error('Error triggering confirmation email:', err);
+    console.error('Error submitting to Edge Function:', err);
+    throw err;
   }
 }
 
@@ -282,30 +278,27 @@ form.addEventListener('submit', async (e) => {
   };
 
 
+  const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]')?.value;
+  if (!turnstileResponse) {
+    showError('Please wait for security check...');
+    // Reset Turnstile just in case it failed
+    if (window.turnstile) {
+      window.turnstile.reset();
+    }
+    return;
+  }
+
   if (supabaseClient) {
     try {
-      const { error } = await supabaseClient
-        .from('waitlist')
-        .insert([
-          {
-            name: nameVal,
-            email: emailVal,
-            country: countryVal,
-            source: referralVal
-          }
-        ]);
-
-      if (error) {
-        throw error;
-      }
-
-      // Send confirmation email via Resend
-      await sendConfirmationEmail(nameVal, emailVal, countryVal, referralVal);
-
+      await submitToEdgeFunction(nameVal, emailVal, countryVal, referralVal, turnstileResponse);
       showSuccess();
     } catch (err) {
       console.error('Supabase error:', err);
-      if (err.code === '23505' || (err.message && err.message.includes('duplicate key'))) {
+      // Reset Turnstile on error so they can try again
+      if (window.turnstile) {
+        window.turnstile.reset();
+      }
+      if (err.message && (err.message.includes('23505') || err.message.includes('duplicate key'))) {
         showError('Already registered!');
       } else {
         showError('Submission failed.');

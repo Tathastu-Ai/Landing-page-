@@ -1,3 +1,5 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -10,12 +12,21 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // 1. Get Resend API key from Supabase Secrets
+    // 1. Get API keys from Supabase Secrets
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
     if (!RESEND_API_KEY) {
       console.error('Error: RESEND_API_KEY is not set in Supabase environment secrets.')
       return new Response(
         JSON.stringify({ error: 'RESEND_API_KEY is missing from Supabase Secrets' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const TURNSTILE_SECRET_KEY = Deno.env.get('TURNSTILE_SECRET_KEY')
+    if (!TURNSTILE_SECRET_KEY) {
+      console.error('Error: TURNSTILE_SECRET_KEY is not set in Supabase environment secrets.')
+      return new Response(
+        JSON.stringify({ error: 'TURNSTILE_SECRET_KEY is missing from Supabase Secrets' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -30,6 +41,7 @@ Deno.serve(async (req) => {
     const email = record.email
     const how_heard = record.referral || record.how_heard || record.source || 'Not specified'
     const country = record.country || req.headers.get('cf-ipcountry') || 'Unknown'
+    const turnstileToken = record.turnstileToken
 
     // Extract IP from Supabase/Cloudflare headers
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'Unknown'
@@ -42,9 +54,60 @@ Deno.serve(async (req) => {
       )
     }
 
+    // 3. Verify Turnstile Token
+    if (!turnstileToken) {
+      return new Response(
+        JSON.stringify({ error: 'Turnstile token missing' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const turnstileFormData = new FormData();
+    turnstileFormData.append('secret', TURNSTILE_SECRET_KEY);
+    turnstileFormData.append('response', turnstileToken);
+    turnstileFormData.append('remoteip', ip);
+
+    const turnstileRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: turnstileFormData
+    });
+    const turnstileOutcome = await turnstileRes.json();
+
+    if (!turnstileOutcome.success) {
+      console.error('Turnstile verification failed:', turnstileOutcome);
+      return new Response(
+        JSON.stringify({ error: 'Security check failed. Are you a bot?' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // 4. Insert into Supabase database
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const { error: dbError } = await supabase
+      .from('waitlist')
+      .insert([
+        {
+          name: name,
+          email: email,
+          country: country,
+          source: how_heard
+        }
+      ])
+
+    if (dbError) {
+      console.error('Database insert error:', dbError)
+      return new Response(
+        JSON.stringify({ error: 'Database insert failed', details: dbError }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     console.log(`Sending welcome email to: ${email} (${name})`)
 
-    // 3. Email layout (HTML content)
+    // 5. Email layout (HTML content)
     const htmlContent = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #eaebed; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
         
@@ -52,7 +115,7 @@ Deno.serve(async (req) => {
         <div style="padding: 40px 32px; color: #333333;">
           <p style="font-size: 16px; line-height: 1.6; margin-top: 0; color: #333333;">Hi ${name},</p>
           
-          <p style="font-size: 16px; line-height: 1.6; color: #333333;">Thank you for joining the waitlist for <strong>Tathastu Ai™</strong>.</p>
+          <p style="font-size: 16px; line-height: 1.6; color: #333333;">Thank you for joining the waitlist for <strong>Tathastu AI™</strong>.</p>
           
           <p style="font-size: 16px; line-height: 1.6; color: #333333;">
             Before we launch, we’d love to hear from you.<br>
@@ -75,7 +138,7 @@ Deno.serve(async (req) => {
           
           <p style="font-size: 16px; line-height: 1.6; margin-bottom: 0; color: #333333;">
             Warmly,<br>
-            <strong>Team Tathastu Ai™</strong><br>
+            <strong>Team Tathastu AI™</strong><br>
             So be it.
           </p>
         </div>
