@@ -151,7 +151,7 @@ async function submitToEdgeFunction(name, email, country, referral, turnstileTok
       const errText = await response.text();
       throw new Error(errText);
     }
-    
+
     return await response.json();
   } catch (err) {
     console.error('Error submitting to Edge Function:', err);
