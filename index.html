@@ -231,10 +231,12 @@
             <input type="checkbox" id="agreeCheckbox" name="agree" checked />
             <span>I agree to receive updates from Tathastu AI.</span>
           </label>
-          
+
           <!-- Cloudflare Turnstile (Invisible) -->
-          <div class="cf-turnstile" data-sitekey="YOUR_TURNSTILE_SITE_KEY" data-size="invisible"></div>
-          
+          <!-- Note: 1x0000000000000000000055 is Cloudflare's official testing sitekey (Always passes). -->
+          <!-- Replace this with your actual Cloudflare Turnstile sitekey in production. -->
+          <div class="cf-turnstile" data-sitekey="0x4AAAAAADuZBB0-M1i9qHe4" data-size="invisible"></div>
+
           <button type="submit" class="form-submit-btn" id="submitBtn">Join the Waitlist</button>
         </form>
       </div>
