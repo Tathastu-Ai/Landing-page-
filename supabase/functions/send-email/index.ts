@@ -28,6 +28,11 @@ Deno.serve(async (req) => {
     const record = body.record || body
     const name = record.name || 'Subscriber'
     const email = record.email
+    const how_heard = record.referral || record.how_heard || record.source || 'Not specified'
+    const country = record.country || req.headers.get('cf-ipcountry') || 'Unknown'
+
+    // Extract IP from Supabase/Cloudflare headers
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'Unknown'
 
     if (!email) {
       console.error('Error: Email address is missing from the record.')
@@ -107,8 +112,8 @@ Deno.serve(async (req) => {
       </div>
     `
 
-    // 4. Send request to Resend API
-    const res = await fetch('https://api.resend.com/emails', {
+    // 4. Send Welcome Email to the User
+    const userRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -122,16 +127,45 @@ Deno.serve(async (req) => {
       }),
     })
 
-    const resBody = await res.json()
-    console.log('Resend Response Code:', res.status)
-    console.log('Resend Response Body:', JSON.stringify(resBody))
+    const userResBody = await userRes.json()
+    console.log('Resend (User) Response Code:', userRes.status)
 
-    if (!res.ok) {
-      throw new Error(`Resend API Error: ${resBody.message || JSON.stringify(resBody)}`)
+    if (!userRes.ok) {
+      throw new Error(`Resend User API Error: ${userResBody.message || JSON.stringify(userResBody)}`)
+    }
+
+    // 5. Send Notification Email to Dhruv
+    const adminRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: 'Tathastu AI <noreply@tathastuai.in>',
+        to: 'dhruv@tathastuai.in', // Sending notification here
+        subject: `New Waitlist Signup: ${name}`,
+        html: `
+          <h3>New Waitlist Signup!</h3>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>How they heard:</strong> ${how_heard}</p>
+          <p><strong>Country:</strong> ${country}</p>
+          <p><strong>IP Address:</strong> ${ip}</p>
+        `,
+      }),
+    })
+
+    const adminResBody = await adminRes.json()
+    console.log('Resend (Admin) Response Code:', adminRes.status)
+
+    if (!adminRes.ok) {
+      console.error(`Resend Admin API Error: ${adminResBody.message || JSON.stringify(adminResBody)}`)
+      // Not throwing error here so we still return success to the user even if admin email fails
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Email sent successfully', data: resBody }),
+      JSON.stringify({ success: true, message: 'Emails sent successfully', data: userResBody }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 

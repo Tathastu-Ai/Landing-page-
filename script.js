@@ -132,7 +132,7 @@ faqItems.forEach(item => {
 async function sendConfirmationEmail(name, email, country, referral) {
   try {
     if (supabaseClient) {
-      const { data, error } = await supabaseClient.functions.invoke('send-email', {
+      const { data, error } = await supabaseClient.functions.invoke('hyper-task', {
         body: { name, email, country, referral }
       });
       if (error) {
@@ -144,7 +144,7 @@ async function sendConfirmationEmail(name, email, country, referral) {
     }
 
     // Fallback: Call our simple local Node.js backend
-    const response = await fetch('http://localhost:3000/send-email', {
+    const response = await fetch('https://qydgtuvytjouwuuobsoe.supabase.co/functions/v1/hyper-task', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
